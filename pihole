@@ -2,9 +2,22 @@
 
 # https://github.com/pi-hole/docker-pi-hole/blob/master/README.md
 
+get_ip_by_default_route () {
+    DEF_ROUTE=$( ip route | grep default )
+    #echo $DEF_ROUTE
+    if [[ $DEF_ROUTE =~ src\ (.+)\ metric ]]; then
+        MY_IP="${BASH_REMATCH[1]}"
+    else
+        echo "No default IP found"
+        exit 1
+    fi
+}
+
 # Note: ServerIP should be replaced with your external ip.
+get_ip_by_default_route
 docker pull pihole/pihole:latest
-docker run -d \
+echo "Trying with IP: $MY_IP"
+[ -z ${MY_IP+x} ] || docker run -d \
     --name pihole \
     -p 53:53/tcp -p 53:53/udp \
     -p 80:80 \
@@ -17,7 +30,7 @@ docker run -d \
     --hostname pi.hole \
     -e VIRTUAL_HOST="pi.hole" \
     -e PROXY_LOCATION="pi.hole" \
-    -e ServerIP="$1" \
+    -e ServerIP="$MY_IP" \
     pihole/pihole:latest
 
 printf 'Starting up pihole container '
